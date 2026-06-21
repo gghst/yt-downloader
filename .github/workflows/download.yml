@@ -31,11 +31,13 @@ jobs:
       - name: Checkout do repositório
         uses: actions/checkout@v4
 
-      - name: Instalar yt-dlp e ffmpeg
+      - name: Instalar yt-dlp, ffmpeg e runtime JS (Deno)
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y ffmpeg
-          pip install -U yt-dlp
+          sudo apt-get install -y ffmpeg curl
+          pip install -U "yt-dlp[default]"
+          curl -fsSL https://deno.land/install.sh | sh
+          echo "$HOME/.deno/bin" >> "$GITHUB_PATH"
 
       - name: Escrever cookies a partir do Secret
         env:
@@ -74,6 +76,7 @@ jobs:
         run: |
           yt-dlp \
             --cookies cookies/yt-cookies.txt \
+            --remote-components ejs:github \
             --format "${{ steps.fmt.outputs.fmt }}" \
             --merge-output-format mp4 \
             --output "video.%(ext)s" \
