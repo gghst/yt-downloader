@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>yt-downloader</title>
+<style>
+  :root{
+    --bg:#0a0a0a; --panel:#131313; --line:#222; --line-soft:#1a1a1a;
+    --text:#e8e8e6; --muted:#7a7a78; --dim:#4a4a48;
+    --ok:#7fae8a; --err:#b56a5a; --accent:#e8e8e6;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{background:var(--bg); color:var(--text);}
+  body{
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    min-height:100vh; display:flex; flex-direction:column; align-items:center;
+    padding: 32px 18px 60px; line-height:1.5;
+  }
+  .wrap{ width:100%; max-width:560px; }
+  header{ margin-bottom:28px; }
+  .mark{ font-family:"SF Mono", "Roboto Mono", Consolas, monospace; font-size:0.72rem; letter-spacing:0.12em; color:var(--dim); text-transform:uppercase; margin-bottom:10px; }
+  h1{ font-size:1.5rem; font-weight:600; letter-spacing:-0.01em; color:#fff; }
+  p.sub{ font-size:0.85rem; color:var(--muted); margin-top:6px; max-width:420px; }
+
+  .card{
+    background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:22px; margin-bottom:16px;
+  }
+  .field{ margin-bottom:16px; }
+  .field:last-child{ margin-bottom:0; }
+  label{ display:flex; justify-content:space-between; font-size:0.75rem; color:var(--muted); margin-bottom:7px; }
+  label .hint{ color:var(--dim); font-weight:400; }
+  input, select{
+    width:100%; background:#0a0a0a; border:1px solid var(--line); border-radius:7px;
+    color:var(--text); padding:11px 13px; font-size:0.92rem; outline:none;
+    font-family:inherit; appearance:none;
+  }
+  select{
+    background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%;
+    background-size: 5px 5px, 5px 5px; background-repeat:no-repeat;
+  }
+  input:focus, select:focus{ border-color:#444; }
+  input::placeholder{ color:var(--dim); }
+
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+  .toggle{
+    display:flex; align-items:center; gap:8px; font-size:0.8rem; color:var(--muted);
+    cursor:pointer; user-select:none; margin-bottom:14px;
+  }
+  .toggle input[type=checkbox]{ width:auto; appearance:auto; accent-color:#888; }
+  .trim{ display:none; }
+  .trim.show{ display:grid; }
+
+  button{
+    width:100%; background:#fff; color:#0a0a0a; border:none; border-radius:7px;
+    padding:13px; font-size:0.92rem; font-weight:600; cursor:pointer; font-family:inherit;
+    transition:opacity .15s;
+  }
+  button:disabled{ background:#2a2a2a; color:var(--dim); cursor:not-allowed; }
+  button:not(:disabled):hover{ opacity:0.88; }
+
+  .console{
+    font-family:"SF Mono", "Roboto Mono", Consolas, monospace; font-size:0.78rem;
+    background:#000; border:1px solid var(--line); border-radius:9px; padding:16px;
+    color:var(--muted); display:none; max-height:260px; overflow-y:auto;
+  }
+  .console.show{ display:block; }
+  .console .line{ margin-bottom:5px; white-space:pre-wrap; word-break:break-all; }
+  .console .line.ok{ color:var(--ok); }
+  .console .line.err{ color:var(--err); }
+  .console .line a{ color:#cfcfcc; text-decoration:underline; }
+  .console .cursor{ display:inline-block; width:6px; height:11px; background:var(--muted); animation:blink 1s steps(1) infinite; vertical-align:middle; }
+  @keyframes blink{ 50%{ opacity:0; } }
+
+  .limits{ margin-top:22px; }
+  .limits summary{ font-size:0.78rem; color:var(--muted); cursor:pointer; padding:4px 0; }
+  .limits-body{ margin-top:12px; font-size:0.78rem; color:var(--muted); border-top:1px solid var(--line-soft); padding-top:12px; }
+  .limits-body table{ width:100%; border-collapse:collapse; margin-bottom:10px; }
+  .limits-body td{ padding:6px 0; border-bottom:1px solid var(--line-soft); vertical-align:top; }
+  .limits-body td:first-child{ color:#bdbdba; width:38%; padding-right:10px; }
+  .limits-body p{ margin-top:8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="mark">github actions · yt-dlp</div>
+    <h1>yt-downloader</h1>
+    <p class="sub">Roda inteiramente no GitHub — seu celular só envia a ordem e recebe o link do arquivo pronto.</p>
+  </header>
+
+  <div class="card">
+    <div class="field">
+      <label>Token GitHub <span class="hint">necessário</span></label>
+      <input id="token" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+    </div>
+
+    <div class="field">
+      <label>URL do YouTube</label>
+      <input id="url" type="url" placeholder="https://www.youtube.com/watch?v=...">
+    </div>
+
+    <div class="field">
+      <label>Qualidade</label>
+      <select id="quality">
+        <option value="best">Melhor disponível (4K se existir)</option>
+        <option value="2160">2160p (4K)</option>
+        <option value="1440">1440p</option>
+        <option value="1080">1080p</option>
+        <option value="720">720p</option>
+        <option value="480">480p</option>
+        <option value="360">360p</option>
+      </select>
+    </div>
+
+    <label class="toggle">
+      <input type="checkbox" id="trimToggle" onchange="document.getElementById('trimFields').classList.toggle('show', this.checked)">
+      Recortar um trecho do vídeo
+    </label>
+
+    <div class="field trim" id="trimFields" style="margin-bottom:16px;">
+      <div class="row2">
+        <div>
+          <label>Início <span class="hint">HH:MM:SS</span></label>
+          <input id="startTime" type="text" placeholder="00:00:30">
+        </div>
+        <div>
+          <label>Fim <span class="hint">HH:MM:SS</span></label>
+          <input id="endTime" type="text" placeholder="00:02:00">
+        </div>
+      </div>
+    </div>
+
+    <button id="btn" onclick="start()">Iniciar download no GitHub</button>
+  </div>
+
+  <div class="console" id="console"></div>
+
+  <details class="limits">
+    <summary>Limites desse esquema (leia antes de baixar algo grande)</summary>
+    <div class="limits-body">
+      <table>
+        <tr><td>Tempo por job</td><td>até 6h por execução — 4K muito longo pode estourar</td></tr>
+        <tr><td>Minutos/mês grátis</td><td>2.000 min — ≈400 vídeos de 5min ou ≈20 vídeos de 1h</td></tr>
+        <tr><td>Tamanho por arquivo</td><td>2 GB no Artifact · Releases aceitam arquivos maiores, mas ainda têm limite prático</td></tr>
+        <tr><td>Armazenamento</td><td>Release não expira; o Artifact (backup) some em 90 dias</td></tr>
+        <tr><td>Bloqueio de IP</td><td>YouTube às vezes bloqueia os servidores do GitHub — os cookies ajudam, não garantem</td></tr>
+        <tr><td>Validade dos cookies</td><td>Sessão do Google expira/rotaciona; de tempos em tempos será preciso exportar e trocar o arquivo</td></tr>
+      </table>
+      <p><b>Sobre o arquivo de cookies:</b> ele fica no repositório, não como Secret. Isso é mais simples de trocar, mas significa que <b>qualquer pessoa com acesso de leitura ao repositório consegue ler suas credenciais de sessão do Google/YouTube</b>. Mantenha o repositório privado e nunca publique a pasta <code>cookies/</code> pelo GitHub Pages.</p>
+    </div>
+  </details>
+</div>
+
+<script>
+// ── Configure aqui ──────────────────────────────────────────
+const OWNER = 'SEU_USUARIO';   // troque pelo seu usuário do GitHub
+const REPO  = 'yt-downloader'; // troque se o repositório tiver outro nome
+const WORKFLOW_FILE = 'download.yml';
+// ─────────────────────────────────────────────────────────────
+
+const consoleEl = document.getElementById('console');
+
+function log(msg, cls) {
+  consoleEl.classList.add('show');
+  const line = document.createElement('div');
+  line.className = 'line' + (cls ? ' ' + cls : '');
+  line.innerHTML = msg;
+  consoleEl.appendChild(line);
+  consoleEl.scrollTop = consoleEl.scrollHeight;
+}
+function setCursor(on) {
+  const old = consoleEl.querySelector('.cursor-line');
+  if (old) old.remove();
+  if (on) {
+    const l = document.createElement('div');
+    l.className = 'line cursor-line';
+    l.innerHTML = '<span class="cursor"></span>';
+    consoleEl.appendChild(l);
+  }
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function ghHeaders(token) {
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Accept': 'application/vnd.github+json',
+  };
+}
+
+async function start() {
+  const token = document.getElementById('token').value.trim();
+  const ytUrl = document.getElementById('url').value.trim();
+  const quality = document.getElementById('quality').value;
+  const trimOn = document.getElementById('trimToggle').checked;
+  const startTime = trimOn ? document.getElementById('startTime').value.trim() : '';
+  const endTime = trimOn ? document.getElementById('endTime').value.trim() : '';
+  const btn = document.getElementById('btn');
+
+  consoleEl.innerHTML = '';
+
+  if (!token) return log('❌ Cole seu token do GitHub.', 'err');
+  if (!ytUrl || (!ytUrl.includes('youtube.com') && !ytUrl.includes('youtu.be')))
+    return log('❌ URL do YouTube inválida.', 'err');
+  const tsRegex = /^\d{1,2}:\d{2}:\d{2}$/;
+  if (trimOn && (!tsRegex.test(startTime) || !tsRegex.test(endTime)))
+    return log('❌ Use o formato HH:MM:SS no recorte.', 'err');
+
+  btn.disabled = true;
+  const dispatchedAt = Date.now();
+  log('→ enviando pedido ao GitHub Actions…');
+  setCursor(true);
+
+  try {
+    const dispatchRes = await fetch(
+      `https://api.github.com/repos/${OWNER}/${REPO}/actions/workflows/${WORKFLOW_FILE}/dispatches`,
+      {
+        method: 'POST',
+        headers: { ...ghHeaders(token), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ref: 'main',
+          inputs: { url: ytUrl, quality, start_time: startTime, end_time: endTime },
+        }),
+      }
+    );
+
+    if (dispatchRes.status !== 204) {
+      const err = await dispatchRes.json().catch(() => ({}));
+      setCursor(false);
+      log(`❌ Erro ${dispatchRes.status}: ${err.message || 'verifique o token e as permissões (Actions: read/write)'}`, 'err');
+      btn.disabled = false;
+      return;
+    }
+    log('✓ workflow disparado', 'ok');
+
+    // localizar o run criado
+    log('→ procurando a execução iniciada…');
+    let run = null;
+    for (let i = 0; i < 12 && !run; i++) {
+      await sleep(3000);
+      const r = await fetch(
+        `https://api.github.com/repos/${OWNER}/${REPO}/actions/workflows/${WORKFLOW_FILE}/runs?event=workflow_dispatch&per_page=5`,
+        { headers: ghHeaders(token) }
+      );
+      const data = await r.json();
+      run = (data.workflow_runs || []).find(x => new Date(x.created_at).getTime() >= dispatchedAt - 8000);
+    }
+    if (!run) {
+      setCursor(false);
+      log('❌ Não encontrei a execução. Confira em github.com/' + OWNER + '/' + REPO + '/actions', 'err');
+      btn.disabled = false;
+      return;
+    }
+    log(`✓ execução #${run.run_number} encontrada — <a href="${run.html_url}" target="_blank">ver no GitHub</a>`, 'ok');
+
+    // acompanhar status
+    let lastStatus = '';
+    while (true) {
+      await sleep(8000);
+      const r = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/actions/runs/${run.id}`, { headers: ghHeaders(token) });
+      const updated = await r.json();
+      if (updated.status !== lastStatus) {
+        lastStatus = updated.status;
+        log(`… status: ${lastStatus}`);
+      }
+      if (updated.status === 'completed') {
+        run = updated;
+        break;
+      }
+    }
+
+    setCursor(false);
+    if (run.conclusion !== 'success') {
+      log(`❌ Execução terminou com: ${run.conclusion}. Veja o log: <a href="${run.html_url}" target="_blank">${run.html_url}</a>`, 'err');
+      btn.disabled = false;
+      return;
+    }
+
+    log('✓ download concluído, publicando…', 'ok');
+    const relRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/releases/tags/video-${run.id}`, { headers: ghHeaders(token) });
+    if (relRes.ok) {
+      const rel = await relRes.json();
+      const asset = (rel.assets || [])[0];
+      log(`✅ Pronto! <a href="${rel.html_url}" target="_blank">abrir página do Release</a>`, 'ok');
+      if (asset) log(`📦 Arquivo: ${asset.name} (${(asset.size / 1048576).toFixed(1)} MB)`, 'ok');
+      log('<span style="color:#555">Esse arquivo não expira. O backup em Artifacts some em 90 dias.</span>');
+    } else {
+      log(`✓ Workflow concluído — abra <a href="${run.html_url}" target="_blank">os Artifacts/Releases no GitHub</a> para baixar.`, 'ok');
+    }
+  } catch (e) {
+    setCursor(false);
+    log('❌ Erro de rede: ' + e.message, 'err');
+  }
+
+  btn.disabled = false;
+}
+</script>
+</body>
+</html>
